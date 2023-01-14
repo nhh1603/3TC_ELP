@@ -3,32 +3,47 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"os"
 )
 
-func loadImg(filePath string) *image.NRGBA {
+func loadImage(filePath string) image.Image {
 	imgFile, err := os.Open(filePath)
-	defer imgFile.Close()
 	if err != nil {
 		fmt.Println("Cannot read file:", err)
-		return nil
+		os.Exit(-1)
 	}
+	defer imgFile.Close()
 
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
 		fmt.Println("Cannot decode file:", err)
-		return nil
+		os.Exit(-1)
 	}
-	return img.(*image.NRGBA)
+
+	return img
 }
 
-func saveImg(filePath string, img *image.NRGBA) {
+type ImageFormat int8
+
+const (
+	PNG ImageFormat = iota
+	JPEG
+)
+
+func saveImage(filePath string, img image.Image, format ImageFormat) {
 	imgFile, err := os.Create(filePath)
-	defer imgFile.Close()
 	if err != nil {
 		fmt.Println("Cannot create file:", err)
-		return
+		os.Exit(-1)
 	}
-	png.Encode(imgFile, img.SubImage(img.Rect))
+	defer imgFile.Close()
+
+	switch format {
+	case PNG:
+		png.Encode(imgFile, img)
+	case JPEG:
+		jpeg.Encode(imgFile, img, &jpeg.Options{Quality: 90})
+	}
 }
