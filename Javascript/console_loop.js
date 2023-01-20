@@ -28,7 +28,13 @@ const execCallback = (commandResult) => {
 }
 
 const loopREPL = () => {
-    askCommand().then(execPromise).then(execCallback)
+    askCommand()
+        .then(execPromise)
+        .then(execCallback)
+        .catch(err => {
+            console.log(err)
+            loopREPL()
+        })
 }
 
 loopREPL()
