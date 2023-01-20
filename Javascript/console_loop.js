@@ -1,4 +1,6 @@
 readLine = require('readline')
+const { promisify } = require('util')
+const execPromise = promisify(require('child_process').exec);
 
 const rl = readLine.createInterface({
     input: process.stdin,
@@ -6,16 +8,16 @@ const rl = readLine.createInterface({
 })
 
 const askCommand = () => {
-    return new Promise(resolve => { rl.question('sh> ', resolve) } )
+    return new Promise(resolve => { rl.question('sh> ', resolve) })
 }
 
-const promptProgram = async () => {
-    let reply
-    while (reply !== "end") {
-        reply = await askCommand()
-        console.log(reply)
-    }
-    rl.close()
+const execCallback = (commandResult) => {
+    console.log(`stdout: ${commandResult.stdout}`)
+    loopREPL()
 }
 
-promptProgram()
+const loopREPL = () => {
+    askCommand().then(execPromise).then(execCallback)
+}
+
+loopREPL()
