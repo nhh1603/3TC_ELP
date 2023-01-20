@@ -32,7 +32,7 @@ const loopREPL = () => {
         .then(execPromise)
         .then(execCallback)
         .catch(err => {
-            console.log(err)
+            console.log(err.stderr)
             loopREPL()
         })
 }
