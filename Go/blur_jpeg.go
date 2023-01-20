@@ -130,10 +130,10 @@ func gaussianWeight(x int, y int, sqrSigma float64) float64 {
 func main() {
 	fmt.Println("Start")
 
-	var img image.Image = loadImage("b&w_large.png")
+	var img image.Image = loadImage("assets/original.jpg")
 
 	// Apply the Gaussian blur
 	blurredImg := gaussianBlur(img, 1)
-	saveImage("b&w_large_blurred.png", blurredImg, PNG)
+	saveImage("assets/original_blurred.png", blurredImg, JPEG)
 	fmt.Println("Blurred image generated")
 }
