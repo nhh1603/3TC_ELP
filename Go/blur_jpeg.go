@@ -8,6 +8,49 @@ import (
 )
 
 // Computes the convolution of the pixels in the range [startRow, endRow] with the given kernel
+func convolveRegion(fromImg image.Image, toImg *image.RGBA, region image.Rectangle, kernel [][]float64) {
+	fromBounds := fromImg.Bounds()
+
+	if region.Max.Y > fromBounds.Max.Y {
+		panic("End row is out of image's bounds")
+	} else if region.Min.Y < fromBounds.Min.Y {
+		panic("Start row is out of image's bounds")
+	}
+
+	radius := (len(kernel) - 1) / 2
+
+	// Iterate over each pixel from the starting to the ending row of pixels
+	for x := region.Min.X; x < region.Max.X; x++ {
+		for y := region.Min.Y; y < region.Max.Y; y++ {
+			var r, g, b float64
+
+			// Iterate over each surrounding pixel within the specified radius
+			for i := -radius; i <= radius; i++ {
+				for j := -radius; j <= radius; j++ {
+					neighborX := x + i
+					neighborY := y + j
+					if neighborX < fromBounds.Min.X || neighborX >= fromBounds.Max.X ||
+						neighborY < fromBounds.Min.Y || neighborY >= fromBounds.Max.Y {
+						// Ignore neighbor pixels out of range
+						continue
+					}
+					// Get the color of a surrounding pixel
+					neighborR, neighborG, neighborB, _ := fromImg.At(neighborX, neighborY).RGBA()
+
+					// Apply the Gaussian blur weight to the surrounding pixel color
+					weight := kernel[i+radius][j+radius]
+					r += float64(neighborR>>8) * weight
+					g += float64(neighborG>>8) * weight
+					b += float64(neighborB>>8) * weight
+				}
+			}
+			// Set the color of the destination pixel
+			toImg.Set(x, y, color.RGBA{uint8(r), uint8(g), uint8(b), 255})
+		}
+	}
+}
+
+// Computes the convolution of the pixels in the range [startRow, endRow] with the given kernel
 func getConvolvedWithin(img image.Image, startRow, endRow int, kernel [][]float64) [][]color.RGBA {
 	bounds := img.Bounds()
 
@@ -40,13 +83,13 @@ func getConvolvedWithin(img image.Image, startRow, endRow int, kernel [][]float6
 						continue
 					}
 					// Get the color of a surrounding pixel
-					sr, sg, sb, _ := img.At(neighborX, neighborY).RGBA()
+					neighborR, neighborG, neighborB, _ := img.At(neighborX, neighborY).RGBA()
 
 					// Apply the Gaussian blur weight to the surrounding pixel color
 					weight := kernel[i+radius][j+radius]
-					r += float64(sr>>8) * weight
-					g += float64(sg>>8) * weight
-					b += float64(sb>>8) * weight
+					r += float64(neighborR>>8) * weight
+					g += float64(neighborG>>8) * weight
+					b += float64(neighborB>>8) * weight
 				}
 			}
 			// Set the color of the destination pixel
@@ -72,20 +115,21 @@ func gaussianBlur(img image.Image, radius int) *image.RGBA {
 			for i := -radius; i <= radius; i++ {
 				for j := -radius; j <= radius; j++ {
 					// Get the color of a surrounding pixel
-					xn := x + i
-					yn := y + j
-					if xn < bounds.Min.X || xn >= bounds.Max.X || yn < bounds.Min.Y || yn >= bounds.Max.Y {
+					neighborX := x + i
+					neighborY := y + j
+					if neighborX < bounds.Min.X || neighborX >= bounds.Max.X ||
+						neighborY < bounds.Min.Y || neighborY >= bounds.Max.Y {
 						// Ignore neighbor pixels out of range
 						continue
 					}
-					neighborPixelColor := img.At(xn, yn)
-					sr, sg, sb, _ := neighborPixelColor.RGBA()
+					neighborPixelColor := img.At(neighborX, neighborY)
+					neighborR, neighborG, neighborB, _ := neighborPixelColor.RGBA()
 
 					// Apply the Gaussian blur weight to the surrounding pixel color
 					blurWeight := kernel[i+radius][j+radius]
-					r += float64(sr>>8) * blurWeight
-					g += float64(sg>>8) * blurWeight
-					b += float64(sb>>8) * blurWeight
+					r += float64(neighborR>>8) * blurWeight
+					g += float64(neighborG>>8) * blurWeight
+					b += float64(neighborB>>8) * blurWeight
 				}
 			}
 
@@ -131,9 +175,9 @@ func main() {
 	fmt.Println("Start")
 
 	var img image.Image = loadImage("assets/original.jpg")
-
+	destImg := image.NewRGBA(img.Bounds())
 	// Apply the Gaussian blur
-	blurredImg := gaussianBlur(img, 1)
-	saveImage("assets/original_blurred.png", blurredImg, JPEG)
+	convolveRegion(img, destImg, image.Rect(50, 100, 200, 190), generateKernel(5))
+	saveImage("assets/original_blurred.png", destImg, JPEG)
 	fmt.Println("Blurred image generated")
 }
