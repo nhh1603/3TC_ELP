@@ -44,7 +44,6 @@ const getSignal = arg => {
 const translateCmd = (cmdStr) => {
     cmdElements = cmdStr.split(" ")
     cmd = cmdElements[0] // First element is the command itself, subsequent elements are the args
-    console.log(cmdElements)
     switch (cmd) {
         case "lp": // Show all open processes
             cmd = "ps -e"
@@ -56,6 +55,15 @@ const translateCmd = (cmdStr) => {
         default:
             break;
     }
+
+    if (cmd.endsWith("!")) { // Run program in the background
+        cmd = cmd.substring(0, cmd.length-1) + "&"
+    }
+
+    if (cmd.startsWith("keep") && !isNaN(cmdElements[1])) { // Detach processus
+        cmd = "disown -h %" + `{cmdElements[1]}`
+    }
+
     cmdElements[0] = cmd
     return cmdElements.join(" ")
 }
