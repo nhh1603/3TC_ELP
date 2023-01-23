@@ -18,18 +18,51 @@ process.stdin.on('keypress', (_str, key) => {
     }
 })
 
-const askCommand = () => {
+const askCmd = () => {
     return new Promise(resolve => { rl.question('sh> ', resolve) })
 }
 
-const execCallback = (commandResult) => {
-    console.log(`stdout: ${commandResult.stdout}`)
+const execCallback = (cmdResult) => {
+    console.log(`stdout: ${cmdResult.stdout}`)
     loopREPL()
 }
 
+const getSignal = arg => {
+    if (arg === "-k") {
+        return "-KILL"
+    } else if (arg === "-p") {
+        return "-STOP"
+    } else if (arg === "-c") {
+        return "-CONT"
+    } else {
+        signalErr = new Error()
+        signalErr.stderr = "Unrecognized signal: " + arg
+        throw signalErr
+    }
+}
+
+const translateCmd = (cmdStr) => {
+    cmdElements = cmdStr.split(" ")
+    cmd = cmdElements[0] // First element is the command itself, subsequent elements are the args
+    console.log(cmdElements)
+    switch (cmd) {
+        case "lp": // Show all open processes
+            cmd = "ps -e"
+            break;
+        case "bing": // Change process state
+            cmd = "kill"
+            signalArg = cmdElements[1]
+            cmdElements[1] = getSignal(signalArg)
+        default:
+            break;
+    }
+    cmdElements[0] = cmd
+    return cmdElements.join(" ")
+}
+
 const loopREPL = () => {
-    askCommand()
-        .then(execPromise)
+    askCmd()
+        .then((cmdStr) => { cmd = translateCmd(cmdStr); return execPromise(cmd) })
         .then(execCallback)
         .catch(err => {
             console.log(err.stderr)
