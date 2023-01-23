@@ -23,7 +23,7 @@ const askCmd = () => {
 }
 
 const execCallback = (cmdResult) => {
-    console.log(`stdout: ${cmdResult.stdout}`)
+    console.log(`${cmdResult.stdout}`)
     loopREPL()
 }
 
@@ -56,8 +56,10 @@ const translateCmd = (cmdStr) => {
             break;
     }
 
-    if (cmd.endsWith("!")) { // Run program in the background
-        cmd = cmd.substring(0, cmd.length-1) + "&"
+    if (cmdStr.endsWith("!")) { // Run program in the background
+        // cmd = cmdStr.substring(0, cmdStr.length-1) +
+        loopREPL();
+        return cmdStr.substring(0, cmdStr.length-1) + "&"
     }
 
     if (cmd.startsWith("keep") && !isNaN(cmdElements[1])) { // Detach processus
