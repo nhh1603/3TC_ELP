@@ -5,7 +5,49 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"time"
 )
+
+// Computes the convolution of the pixels in the range [startPix, endPix] with the given kernel
+func convolveRange(fromImg image.Image, toImg *image.RGBA, startPix, endPix int, kernel [][]float64) {
+	fromBounds := fromImg.Bounds()
+
+	if endPix > fromBounds.Max.X * fromBounds.Max.Y {
+		// panic("End row is out of image's bounds")
+		endPix = fromBounds.Max.X * fromBounds.Max.Y
+	} else if startPix < 0 {
+		panic("Start row is out of image's bounds")
+	}
+
+	radius := (len(kernel) - 1) / 2
+
+	// Iterate over each pixel from the starting to the ending row of pixels
+	for i := startPix; i <= endPix; i++ {
+		currentPix := [2]int {i / fromBounds.Max.X, i % fromBounds.Max.X}
+		var r, g, b float64
+		// Iterate over each surrounding pixel within the specified radius
+		for i := -radius; i <= radius; i++ {
+			for j := -radius; j <= radius; j++ {
+				neighborX := currentPix[1] + i
+				neighborY := currentPix[0] + j
+				if neighborX < fromBounds.Min.X || neighborX >= fromBounds.Max.X ||
+					neighborY < fromBounds.Min.Y || neighborY >= fromBounds.Max.Y {
+					// Ignore neighbor pixels out of range
+					continue
+				}
+				// Get the color of a surrounding pixel
+				neighborR, neighborG, neighborB, _ := fromImg.At(neighborX, neighborY).RGBA()
+				// Apply the Gaussian blur weight to the surrounding pixel color
+				weight := kernel[i+radius][j+radius]
+				r += float64(neighborR>>8) * weight
+				g += float64(neighborG>>8) * weight
+				b += float64(neighborB>>8) * weight
+			}
+		}
+		// Set the color of the destination pixel
+		toImg.Set(currentPix[1], currentPix[0], color.RGBA{uint8(r), uint8(g), uint8(b), 255})
+	}
+}
 
 // Computes the convolution of the pixels in the range [startRow, endRow] with the given kernel
 func convolveRegion(fromImg image.Image, toImg *image.RGBA, region image.Rectangle, kernel [][]float64) {
@@ -171,13 +213,17 @@ func gaussianWeight(x int, y int, sqrSigma float64) float64 {
 	return 1 / (2 * math.Pi * sqrSigma) * math.Exp(-(float64(x*x+y*y))/(2*sqrSigma))
 }
 
-func main() {
+func main2() {
 	fmt.Println("Start")
 
 	var img image.Image = loadImage("assets/original.jpg")
 	destImg := image.NewRGBA(img.Bounds())
 	// Apply the Gaussian blur
-	convolveRegion(img, destImg, image.Rect(50, 100, 200, 190), generateKernel(5))
+	// convolveRegion(img, destImg, image.Rect(50, 100, 200, 190), generateKernel(5))
+	start := time.Now()
+	convolveRange(img, destImg, 10, 4000, generateKernel(5))
+	end := time.Now()
 	saveImage("assets/original_blurred.png", destImg, JPEG)
 	fmt.Println("Blurred image generated")
+	fmt.Println("Time: ", end.Sub(start).Milliseconds())
 }
