@@ -136,6 +136,6 @@ func runTaskChannel() {
 	println("Time: ", endTime.Sub(startTime).Milliseconds())
 }
 
-func main() {
+func main3() {
 	runTaskChannel()
 }
