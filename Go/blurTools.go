@@ -10,7 +10,6 @@ import (
 func convolveRange(fromImg image.Image, toImg *image.RGBA, startPix, endPix int, kernel [][]float64) {
 	fromBounds := fromImg.Bounds()
 	maxBounds := fromBounds.Max
-	minBounds := fromBounds.Min
 
 	if endPix >= maxBounds.X*maxBounds.Y {
 		panic("End pixel is out of image's bounds")
@@ -29,10 +28,17 @@ func convolveRange(fromImg image.Image, toImg *image.RGBA, startPix, endPix int,
 			for j := -radius; j <= radius; j++ {
 				neighborX := currentPix.X + i
 				neighborY := currentPix.Y + j
-				if neighborX < minBounds.X || neighborX >= maxBounds.X ||
-					neighborY < minBounds.Y || neighborY >= maxBounds.Y {
-					// Ignore neighbor pixels out of image bounds
-					continue
+
+				// Mirror the pixel against the edge of image in case it is out of range
+				if neighborX < 0 {
+					neighborX = -neighborX
+				} else if neighborX >= fromBounds.Max.X {
+					neighborX = 2*(fromBounds.Max.X-1) - neighborX
+				}
+				if neighborY < 0 {
+					neighborY = -neighborY
+				} else if neighborY >= fromBounds.Max.Y {
+					neighborY = 2*(fromBounds.Max.Y-1) - neighborY
 				}
 				// Get the color of a surrounding pixel
 				neighborR, neighborG, neighborB, _ := fromImg.At(neighborX, neighborY).RGBA()
