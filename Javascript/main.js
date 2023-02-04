@@ -6,6 +6,9 @@ const rl = readline.createInterface({
     output: process.stdout
 });
 
+rl.on('line', (command) => {
+    
+})
 rl.question('Enter a command: ', (command) => {
     exec(command, (error, stdout, stderr) => {
         if (error) {
@@ -17,4 +20,5 @@ rl.question('Enter a command: ', (command) => {
     });
     rl.close();
 });
+
 
